@@ -1,6 +1,6 @@
 This is an iteration of the PintOS project, adopted from Stanford University.
 This iteration of the project uses the Ubuntu 16.04 virtual machine (VMware workstation pro for Windows and UTM for MacOS).
-The ISO image used is [here](https://releases.ubuntu.com/16.04/).
+The ISO image used is <a href=https://releases.ubuntu.com/16.04/ target="_blank">here</a>.
 
 Due to the project being on an older version of Ubuntu, older libraries and dependencies are used. If you are downloading the
 ISO image of Ubuntu 16.04 from the hyperlink above, most of the dependencies should already be installed. However, the versions
