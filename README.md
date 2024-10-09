@@ -1,3 +1,4 @@
+# ECE 468 PintOS Project
 This is an iteration of the PintOS project, adopted from Stanford University.
 This iteration of the project uses the Ubuntu 16.04 virtual machine (VMware workstation pro for Windows and UTM for MacOS).
 The ISO image used is [here](https://releases.ubuntu.com/16.04/).
@@ -13,8 +14,9 @@ will be listed below.
   <li>GDB: GNU gdb 7.11.1</li>
   <li>QEMU: qemu-system-i386 OR qemu-system-x86</li>
 </ul>
-==========================================================================                              
+<hr>
 
+## User Programs Project
 User Programs is the implementation of 13 system calls:
 <ul>
   <li>SYS_HALT</li>
@@ -33,3 +35,6 @@ User Programs is the implementation of 13 system calls:
 </ul>
 
 To properly implement these function calls, multiple files across the userprog and threads directories will have to be modified. Majority of the changes are located in the syscall.c file, where each system call is implemented, along with a system handler.
+<hr>
+
+## Modifications
