@@ -13,3 +13,22 @@ will be listed below.
   <li>GDB: GNU gdb 7.11.1</li>
   <li>QEMU: qemu-system-i386 OR qemu-system-x86</li>
 </ul>
+------------------------------------------------------------------------------------------------------------------------------
+User Programs is the implementation of 13 system calls:
+<ul>
+  <li>SYS_HALT</li>
+  <li>SYS_EXIT</li>
+  <li>SYS_EXEC</li>
+  <li>SYS_WAIT</li>
+  <li>SYS_CREATE</li>
+  <li>SYS_REMOVE</li>
+  <li>SYS_OPEN</li>
+  <li>SYS_FILESIZE</li>
+  <li>SYS_READ</li>
+  <li>SYS_WRITE</li>
+  <li>SYS_SEEK</li>
+  <li>SYS_TELL</li>
+  <li>SYS_CLOSE</li>
+</ul>
+
+To properly implement these function calls, multiple files across the userprog and threads directories will have to be modified. Majority of the changes are located in the syscall.c file, where each system call is implemented, along with a system handler.
