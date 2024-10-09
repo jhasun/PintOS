@@ -1,11 +1,11 @@
 //////////////////////////////////////////////////////////////////////////////////////
 ///         University of Hawaii - College of Engineering
-///                       Amanda Eckardt
+///                      Joshua Asuncion
 ///                     ECE 468 Fall 2024
 ///
 ///                     Pintos Progect B
 /// 
-///                 Caller ID: You're Face
+//
 ///
 ///@brief:
 ///@see:  https://casys-kaist.github.io/pintos-kaist/project2/system_call.html   
@@ -25,7 +25,8 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 #include "threads/malloc.h"
-#include <sys/types.h>
+//#include <sys/types.h>
+#include "lib/kernel/list.h"
 
 #define SYS_HALT     0  // System Call 0 HALT
 #define SYS_EXIT     1  // System Call 1 EXIT
@@ -60,18 +61,18 @@ void syscall_init (void) {
 bool verify_ptr(const void *ptr){
   
   // Check if the pointer is not within the user address space or NULL.
-  if(ptr == NULL || !is_user_vadder(ptr)){
-    syscall(-1); // Terminate the process if point is invalid
+  if(ptr == NULL || !is_user_vaddr(ptr)){
+    syscall_exit(-1); // Terminate the process if point is invalid
     return false;
   }
 
   // Check if the pointer is within the kernel address space. BIG NO, NO!
   if(is_kernel_vaddr(ptr)){
-    syscall(-1); // Terminate the process if point is invalid
+    syscall_exit(-1); // Terminate the process if point is invalid
     return false;
   }
 
-  struct thread* currentThread = thread_current(); // Get current thread
+  //struct thread* currentThread = thread_current(); // Get current thread
 
   // Check if address is a pointer to unmapped virtual memory. 
   // Use #ifdef for pagefir thread field
@@ -120,7 +121,7 @@ static void syscall_handler (struct intr_frame *f UNUSED){
     }
 
     int status = *(int *)(f->esp + 4);  // Retrieving the status code from the stack
-    exit(status);                       // Exit the process with the given status code
+    syscall_exit(status);                       // Exit the process with the given status code
     break;
   }
 
@@ -340,7 +341,7 @@ void halt (void){
 ///
 ///@details Modified struct thread in thread.h to include field elem 'exit_status'
 ///@param status
-void exit (int status){
+void syscall_exit (int status){
 
   struct thread *currentThread = thread_current();        // get current thread
   currentThread->exit_status = status;                    // store the status of the thread in exit_status
@@ -504,7 +505,7 @@ int open (const char *file){
     return -1;
   }
 
-  struct thread *currentThread = current_thread();  // Get the current thread
+  struct thread *currentThread = thread_current();  // Get the current thread
   int file_descriptor = currentThread->next_fd;     // Get the next available file descriptor
 
   // Check if the file descriptor is valid
@@ -674,7 +675,7 @@ unsigned tell (int fd){
 
   // Check if fd is valid
   if (fd < 0 || fd >= currentThread->next_fd || currentThread->fd_table[fd] == NULL){
-    return;
+    return (unsigned) -1;
   }
 
   lock_acquire(&filesystem_lock);                   // Acquire the lock to prevent concurrent access
