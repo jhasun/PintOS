@@ -13,7 +13,7 @@ will be listed below.
   <li>GDB: GNU gdb 7.11.1</li>
   <li>QEMU: qemu-system-i386 OR qemu-system-x86</li>
 </ul>
-=====================================================================
+==========================================================================                              
 
 User Programs is the implementation of 13 system calls:
 <ul>
