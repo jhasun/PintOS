@@ -17,6 +17,9 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
+/* Global variable list for sleeping elements */
+static struct list sleep_list;
+
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
@@ -30,18 +33,21 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
+bool compare_wake_up_time(const struct list_elem *a,
+			  const struct list_elem *b,
+			  void *aux UNUSED);
+
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
-void
-timer_init (void) 
+void timer_init (void) 
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&sleep_list);		// Initialize the sleep list
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
-void
-timer_calibrate (void) 
+void timer_calibrate (void) 
 {
   unsigned high_bit, test_bit;
 
@@ -67,8 +73,7 @@ timer_calibrate (void)
 }
 
 /* Returns the number of timer ticks since the OS booted. */
-int64_t
-timer_ticks (void) 
+int64_t timer_ticks (void) 
 {
   enum intr_level old_level = intr_disable ();
   int64_t t = ticks;
@@ -78,44 +83,49 @@ timer_ticks (void)
 
 /* Returns the number of timer ticks elapsed since THEN, which
    should be a value once returned by timer_ticks(). */
-int64_t
-timer_elapsed (int64_t then) 
+int64_t timer_elapsed (int64_t then) 
 {
   return timer_ticks () - then;
 }
 
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
    be turned on. */
-void
-timer_sleep (int64_t ticks) 
+void timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
+  // int64_t start = timer_ticks ();
+  if (ticks <= 0) return;
 
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  // Disable interrupts to avoid race conditions
+  enum intr_level old_level = intr_disable();
+
+  // Set up thread's wake-up time and add to sleep list
+  thread_current()->remaining_time_to_wake_up = timer_ticks() + ticks;
+  list_insert_ordered(&sleep_list, &thread_current()->sleepelem, compare_wake_up_time, NULL);
+
+  // Block thread until it's time to wake up
+  thread_block();
+  
+  // Restore interrupt level
+  intr_set_level(old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
    turned on. */
-void
-timer_msleep (int64_t ms) 
+void timer_msleep (int64_t ms) 
 {
   real_time_sleep (ms, 1000);
 }
 
 /* Sleeps for approximately US microseconds.  Interrupts must be
    turned on. */
-void
-timer_usleep (int64_t us) 
+void timer_usleep (int64_t us) 
 {
   real_time_sleep (us, 1000 * 1000);
 }
 
 /* Sleeps for approximately NS nanoseconds.  Interrupts must be
    turned on. */
-void
-timer_nsleep (int64_t ns) 
+void timer_nsleep (int64_t ns) 
 {
   real_time_sleep (ns, 1000 * 1000 * 1000);
 }
@@ -127,8 +137,7 @@ timer_nsleep (int64_t ns)
    interrupts off for the interval between timer ticks or longer
    will cause timer ticks to be lost.  Thus, use timer_msleep()
    instead if interrupts are enabled. */
-void
-timer_mdelay (int64_t ms) 
+void timer_mdelay (int64_t ms) 
 {
   real_time_delay (ms, 1000);
 }
@@ -140,8 +149,7 @@ timer_mdelay (int64_t ms)
    interrupts off for the interval between timer ticks or longer
    will cause timer ticks to be lost.  Thus, use timer_usleep()
    instead if interrupts are enabled. */
-void
-timer_udelay (int64_t us) 
+void timer_udelay (int64_t us) 
 {
   real_time_delay (us, 1000 * 1000);
 }
@@ -153,31 +161,43 @@ timer_udelay (int64_t us)
    interrupts off for the interval between timer ticks or longer
    will cause timer ticks to be lost.  Thus, use timer_nsleep()
    instead if interrupts are enabled.*/
-void
-timer_ndelay (int64_t ns) 
+void timer_ndelay (int64_t ns) 
 {
   real_time_delay (ns, 1000 * 1000 * 1000);
 }
 
 /* Prints timer statistics. */
-void
-timer_print_stats (void) 
+void timer_print_stats (void) 
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
-static void
-timer_interrupt (struct intr_frame *args UNUSED)
+static void timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+
+  // Check for threads that need to be woken up
+  while (!list_empty(&sleep_list)) {
+    struct thread *t = list_entry(list_front(&sleep_list), struct thread, sleepelem);
+
+    /* If the earliest wake-up time is greater than current ticks, stop */
+    if (t->remaining_time_to_wake_up > ticks) break;
+
+    // Remove the thread from the sleep list and unblock it
+    list_pop_front(&sleep_list);
+    thread_unblock(t);
+  }
+
+  if (thread_mlfqs && ticks % TIMER_FREQ == 0){
+	thread_tick_one_second ();
+  }
   thread_tick ();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
-static bool
-too_many_loops (unsigned loops) 
+static bool too_many_loops (unsigned loops) 
 {
   /* Wait for a timer tick. */
   int64_t start = ticks;
@@ -208,8 +228,7 @@ busy_wait (int64_t loops)
 }
 
 /* Sleep for approximately NUM/DENOM seconds. */
-static void
-real_time_sleep (int64_t num, int32_t denom) 
+static void real_time_sleep (int64_t num, int32_t denom) 
 {
   /* Convert NUM/DENOM seconds into timer ticks, rounding down.
           
@@ -236,11 +255,21 @@ real_time_sleep (int64_t num, int32_t denom)
 }
 
 /* Busy-wait for approximately NUM/DENOM seconds. */
-static void
-real_time_delay (int64_t num, int32_t denom)
+static void real_time_delay (int64_t num, int32_t denom)
 {
   /* Scale the numerator and denominator down by 1000 to avoid
      the possibility of overflow. */
   ASSERT (denom % 1000 == 0);
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
+}
+
+/* Compare threads based on wake up time */
+bool compare_wake_up_time(const struct list_elem *a,
+			  const struct list_elem *b,
+			  void *aux UNUSED)
+{
+  struct thread *thread_a = list_entry(a, struct thread, sleepelem);
+  struct thread *thread_b = list_entry(b, struct thread, sleepelem);
+
+  return thread_a->remaining_time_to_wake_up < thread_b->remaining_time_to_wake_up;
 }
