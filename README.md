@@ -16,11 +16,18 @@ will be listed below.
 </ul>
 
 ## Table of Contents
+* [Dev and Testing Guide](#dev-and-testing-guide)
 * [Threads Overview](#threads-overview)
 * [Modifications](#modifications)
 * [Results](#results)
 
 <hr>
+## Dev and Testing Guide
+To run the tests regarding the threads section of the PintOS project, first download the .zip file from this repository.
+Once you have the .xip file, unzip the folder in your Ubuntu Virtual Machine (keep in mind that this version of the PintOS 
+project uses the libraries listed above, so any major changes in testing environment may affect PintOS). Open terminal in 
+Ubuntu, and use the command cd to go into the threads directory, where you use the make command. There should be a new 
+directory called "build", cd into it and run make check. This will allow you to see what tests are passing.
 
 ## Threads Overview
 <hr>
