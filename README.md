@@ -16,31 +16,13 @@ will be listed below.
 </ul>
 
 ## Table of Contents
-* [User Programs Overview](#user-programs-overview)
+* [Threads Overview](#threads-overview)
 * [Modifications](#modifications)
 * [Results](#results)
 
 <hr>
 
-## User Programs Overview
-User Programs is the implementation of 13 system calls:
-<ul>
-  <li>SYS_HALT</li>
-  <li>SYS_EXIT</li>
-  <li>SYS_EXEC</li>
-  <li>SYS_WAIT</li>
-  <li>SYS_CREATE</li>
-  <li>SYS_REMOVE</li>
-  <li>SYS_OPEN</li>
-  <li>SYS_FILESIZE</li>
-  <li>SYS_READ</li>
-  <li>SYS_WRITE</li>
-  <li>SYS_SEEK</li>
-  <li>SYS_TELL</li>
-  <li>SYS_CLOSE</li>
-</ul>
-
-To properly implement these function calls, multiple files across the userprog and threads directories will have to be modified. Majority of the changes are located in the syscall.c file, where each system call is implemented, along with a system handler.
+## Threads Overview
 <hr>
 
 ## Modifications
