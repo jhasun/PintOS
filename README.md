@@ -23,6 +23,8 @@ will be listed below.
 
 <hr>
 ## Dev and Testing Guide
+<hr>
+
 To run the tests regarding the threads section of the PintOS project, first download the .zip file from this repository.
 Once you have the .xip file, unzip the folder in your Ubuntu Virtual Machine (keep in mind that this version of the PintOS 
 project uses the libraries listed above, so any major changes in testing environment may affect PintOS). Open terminal in 
