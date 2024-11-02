@@ -69,7 +69,13 @@ load_avg = (59/60) * load_avg + (1/60) * ready_threads
 <hr>
 
 ## Modifications
-lorem ipsum
+**fixed_point.h:**
+
+**timer.c and timer.h:**
+
+**synch.c and synch.h:**
+
+**thread.c and thread.h:**
 
 <hr>
 
